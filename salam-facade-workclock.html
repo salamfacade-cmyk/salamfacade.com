@@ -1,0 +1,1129 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Salam Facade – Work Clock</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+  :root {
+    --navy: #1a2744;
+    --navy-light: #243357;
+    --gold: #c9a84c;
+    --gold-light: #e8c97a;
+    --bg: #f4f6fa;
+    --white: #ffffff;
+    --green: #22c55e;
+    --red: #ef4444;
+    --orange: #f97316;
+    --text: #1e293b;
+    --muted: #64748b;
+    --border: #e2e8f0;
+    --shadow: 0 4px 24px rgba(26,39,68,0.10);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ===== HEADER ===== */
+  .header {
+    background: var(--navy);
+    color: white;
+    padding: 0 24px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+  }
+  .header-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    font-size: 17px;
+    letter-spacing: 0.5px;
+  }
+  .header-logo span { color: var(--gold); }
+  .header-logo .dot { width: 8px; height: 8px; background: var(--gold); border-radius: 50%; }
+  .header-nav { display: flex; gap: 8px; }
+  .nav-btn {
+    padding: 7px 16px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.2s;
+  }
+  .nav-btn.active { background: var(--gold); color: var(--navy); }
+  .nav-btn.inactive { background: transparent; color: rgba(255,255,255,0.7); }
+  .nav-btn.inactive:hover { background: rgba(255,255,255,0.1); color: white; }
+
+  /* ===== VIEWS ===== */
+  .view { display: none; padding: 28px 24px; max-width: 1100px; margin: 0 auto; }
+  .view.active { display: block; }
+
+  /* ===== CARDS ===== */
+  .card {
+    background: white;
+    border-radius: 14px;
+    padding: 24px;
+    box-shadow: var(--shadow);
+    margin-bottom: 20px;
+  }
+  .card-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--navy);
+    margin-bottom: 18px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-title .icon { font-size: 18px; }
+
+  /* ===== STATS ROW ===== */
+  .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
+  .stat-card {
+    background: white;
+    border-radius: 14px;
+    padding: 20px;
+    box-shadow: var(--shadow);
+    text-align: center;
+    border-top: 3px solid var(--gold);
+  }
+  .stat-num { font-size: 28px; font-weight: 700; color: var(--navy); }
+  .stat-label { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+  /* ===== LIVE TABLE ===== */
+  .live-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #dcfce7;
+    color: #16a34a;
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 16px;
+  }
+  .live-dot {
+    width: 8px; height: 8px;
+    background: #16a34a;
+    border-radius: 50%;
+    animation: pulse 1.5s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th {
+    background: var(--navy);
+    color: white;
+    padding: 10px 14px;
+    text-align: right;
+    font-weight: 500;
+    font-size: 13px;
+  }
+  th:first-child { border-radius: 8px 0 0 8px; }
+  th:last-child { border-radius: 0 8px 8px 0; }
+  td { padding: 11px 14px; border-bottom: 1px solid var(--border); }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #f8fafc; }
+
+  .status-in {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: #dcfce7; color: #16a34a;
+    padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600;
+  }
+  .status-out {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: #fee2e2; color: #dc2626;
+    padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600;
+  }
+  .status-flag {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: #ffedd5; color: #ea580c;
+    padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600;
+  }
+
+  /* ===== NOTIFICATIONS ===== */
+  .notif-list { display: flex; flex-direction: column; gap: 10px; max-height: 320px; overflow-y: auto; }
+  .notif-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 16px;
+    border-radius: 10px;
+    border-left: 4px solid transparent;
+    background: #f8fafc;
+    font-size: 13px;
+  }
+  .notif-item.in { border-left-color: var(--green); }
+  .notif-item.out { border-left-color: var(--red); }
+  .notif-item.flag { border-left-color: var(--orange); }
+  .notif-icon { font-size: 20px; flex-shrink: 0; }
+  .notif-text { flex: 1; }
+  .notif-name { font-weight: 600; color: var(--navy); }
+  .notif-time { color: var(--muted); font-size: 12px; margin-top: 2px; }
+
+  /* ===== WORKER VIEW ===== */
+  .worker-hero {
+    background: linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 100%);
+    border-radius: 20px;
+    padding: 40px 24px;
+    text-align: center;
+    color: white;
+    margin-bottom: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .worker-hero::before {
+    content: '';
+    position: absolute;
+    top: -40px; right: -40px;
+    width: 180px; height: 180px;
+    border-radius: 50%;
+    background: rgba(201,168,76,0.15);
+  }
+  .worker-hero h2 { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+  .worker-hero p { color: rgba(255,255,255,0.7); font-size: 14px; }
+  .time-display {
+    font-size: 48px;
+    font-weight: 700;
+    color: var(--gold);
+    letter-spacing: 2px;
+    margin: 16px 0;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .worker-form { display: flex; flex-direction: column; gap: 14px; }
+  .form-group label { display: block; font-size: 13px; font-weight: 600; color: var(--navy); margin-bottom: 6px; }
+  .form-group select, .form-group input {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    font-size: 14px;
+    font-family: inherit;
+    background: white;
+    color: var(--text);
+    transition: border-color 0.2s;
+  }
+  .form-group select:focus, .form-group input:focus {
+    outline: none;
+    border-color: var(--navy);
+  }
+
+  .btn-clock {
+    width: 100%;
+    padding: 16px;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.5px;
+  }
+  .btn-clock-in { background: var(--green); color: white; }
+  .btn-clock-in:hover { background: #16a34a; transform: translateY(-1px); }
+  .btn-clock-out { background: var(--red); color: white; }
+  .btn-clock-out:hover { background: #dc2626; transform: translateY(-1px); }
+  .btn-clock:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  .gps-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 500;
+  }
+  .gps-ok { background: #dcfce7; color: #16a34a; }
+  .gps-warn { background: #ffedd5; color: #ea580c; }
+  .gps-loading { background: #f1f5f9; color: var(--muted); }
+
+  /* ===== QR VIEW ===== */
+  .qr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+  .qr-card {
+    background: white;
+    border-radius: 14px;
+    padding: 24px;
+    box-shadow: var(--shadow);
+    text-align: center;
+    border-top: 3px solid var(--gold);
+  }
+  .qr-box {
+    width: 160px;
+    height: 160px;
+    margin: 0 auto 16px;
+    background: var(--navy);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 11px;
+    position: relative;
+    overflow: hidden;
+  }
+  .qr-inner {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+    padding: 12px;
+    width: 100%;
+    height: 100%;
+  }
+  .qr-pixel { border-radius: 1px; }
+  .qr-project-name { font-size: 15px; font-weight: 700; color: var(--navy); margin-bottom: 4px; }
+  .qr-address { font-size: 12px; color: var(--muted); margin-bottom: 14px; }
+  .btn-print {
+    padding: 8px 18px;
+    background: var(--navy);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+    font-weight: 500;
+  }
+  .btn-print:hover { background: var(--navy-light); }
+
+  /* ===== REPORTS VIEW ===== */
+  .report-controls {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+    align-items: flex-end;
+  }
+  .report-controls .form-group { flex: 1; min-width: 150px; }
+  .btn-export {
+    padding: 12px 24px;
+    background: var(--gold);
+    color: var(--navy);
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s;
+  }
+  .btn-export:hover { background: var(--gold-light); }
+
+  /* ===== MANAGE VIEW ===== */
+  .manage-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .input-row { display: flex; gap: 10px; margin-bottom: 14px; }
+  .input-row input, .input-row select {
+    flex: 1;
+    padding: 10px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+  }
+  .btn-add {
+    padding: 10px 18px;
+    background: var(--navy);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .btn-add:hover { background: var(--navy-light); }
+  .list-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    background: #f8fafc;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    font-size: 14px;
+  }
+  .list-item-info { display: flex; flex-direction: column; gap: 2px; }
+  .list-item-name { font-weight: 600; color: var(--navy); }
+  .list-item-sub { font-size: 12px; color: var(--muted); }
+  .btn-del {
+    background: none;
+    border: none;
+    color: var(--red);
+    cursor: pointer;
+    font-size: 16px;
+    padding: 4px;
+    opacity: 0.7;
+  }
+  .btn-del:hover { opacity: 1; }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: var(--navy);
+    color: white;
+    padding: 14px 24px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 500;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+    transition: transform 0.3s ease;
+    z-index: 999;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 260px;
+    justify-content: center;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.success { border-top: 3px solid var(--green); }
+  .toast.warning { border-top: 3px solid var(--orange); }
+  .toast.error { border-top: 3px solid var(--red); }
+
+  .section-divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 24px 0 16px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .section-divider::before, .section-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  @media (max-width: 700px) {
+    .stats-row { grid-template-columns: repeat(2,1fr); }
+    .manage-grid { grid-template-columns: 1fr; }
+    .header-logo { font-size: 14px; }
+    .nav-btn { padding: 6px 10px; font-size: 12px; }
+    .view { padding: 16px; }
+  }
+
+  /* Timesheet Preview Table */
+  .ts-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 12px; }
+  .ts-table th { background: var(--navy); color: white; padding: 8px 10px; text-align: center; font-size: 12px; }
+  .ts-table td { padding: 7px 10px; border-bottom: 1px solid var(--border); text-align: center; }
+  .ts-week-header td { background: #1a2744; color: var(--gold); font-weight: 700; font-size: 12px; padding: 6px 10px; }
+  .ts-total td { background: #22c55e; color: white; font-weight: 700; }
+  .ts-biweekly td { background: var(--navy); color: var(--gold); font-weight: 700; font-size: 14px; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-logo">
+    <div class="dot"></div>
+    SALAM <span>FACADE</span>
+    <span style="color:rgba(255,255,255,0.3);font-weight:300;font-size:13px;">Work Clock</span>
+  </div>
+  <div class="header-nav">
+    <button class="nav-btn active" onclick="showView('dashboard')">📊 داشبورد</button>
+    <button class="nav-btn inactive" onclick="showView('worker')">⏱ ورود/خروج</button>
+    <button class="nav-btn inactive" onclick="showView('reports')">📋 گزارش</button>
+    <button class="nav-btn inactive" onclick="showView('qrcodes')">🔲 QR کدها</button>
+    <button class="nav-btn inactive" onclick="showView('manage')">⚙️ مدیریت</button>
+  </div>
+</div>
+
+<!-- ===== DASHBOARD ===== -->
+<div class="view active" id="view-dashboard">
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-num" id="stat-active">0</div>
+      <div class="stat-label">🟢 الان در سایت</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" id="stat-today">0</div>
+      <div class="stat-label">📅 ورود امروز</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" id="stat-hours">0h</div>
+      <div class="stat-label">⏱ کل ساعت امروز</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" id="stat-flag">0</div>
+      <div class="stat-label">⚑ GPS نامشخص</div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 340px;gap:20px;">
+    <div class="card">
+      <div class="card-title"><span class="icon">👷</span> وضعیت لحظه‌ای کارگران</div>
+      <div class="live-badge"><div class="live-dot"></div> Live</div>
+      <table>
+        <thead>
+          <tr>
+            <th>نام کارگر</th>
+            <th>پروژه</th>
+            <th>ورود</th>
+            <th>مدت</th>
+            <th>وضعیت</th>
+          </tr>
+        </thead>
+        <tbody id="live-table-body">
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="icon">🔔</span> آخرین رویدادها</div>
+      <div class="notif-list" id="notif-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== WORKER CLOCK IN/OUT ===== -->
+<div class="view" id="view-worker">
+  <div style="max-width:420px;margin:0 auto;">
+    <div class="worker-hero">
+      <h2>Salam Facade</h2>
+      <p>ثبت ورود و خروج از سایت</p>
+      <div class="time-display" id="live-clock">00:00:00</div>
+      <div style="font-size:13px;color:rgba(255,255,255,0.6);" id="live-date"></div>
+    </div>
+
+    <div class="card">
+      <div class="worker-form">
+        <div class="form-group">
+          <label>👤 نام کارگر</label>
+          <select id="worker-select">
+            <option value="">انتخاب کنید...</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>🏗 پروژه (سایت)</label>
+          <select id="site-select">
+            <option value="">انتخاب کنید...</option>
+          </select>
+        </div>
+
+        <div class="gps-indicator gps-loading" id="gps-status">
+          📍 در حال دریافت موقعیت GPS...
+        </div>
+
+        <button class="btn-clock btn-clock-in" id="btn-clock-in" onclick="clockIn()">
+          ✅ &nbsp; Clock In — ورود به سایت
+        </button>
+        <button class="btn-clock btn-clock-out" id="btn-clock-out" onclick="clockOut()" style="display:none;">
+          🚪 &nbsp; Clock Out — خروج از سایت
+        </button>
+
+        <div id="worker-status" style="text-align:center;font-size:13px;color:var(--muted);padding:8px 0;"></div>
+      </div>
+    </div>
+
+    <!-- QR Scanner Simulation -->
+    <div class="card" style="text-align:center;">
+      <div class="card-title" style="justify-content:center;"><span class="icon">🔲</span> اسکن QR سایت</div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">QR کد نصب‌شده روی toolbox سایت را اسکن کنید</p>
+      <button onclick="simulateScan()" style="padding:12px 28px;background:var(--navy);color:white;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;">
+        📷 اسکن QR کد
+      </button>
+      <div id="scan-result" style="margin-top:12px;font-size:13px;color:var(--green);font-weight:600;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== REPORTS ===== -->
+<div class="view" id="view-reports">
+  <div class="card">
+    <div class="card-title"><span class="icon">📋</span> گزارش کارکرد</div>
+    <div class="report-controls">
+      <div class="form-group">
+        <label>کارگر</label>
+        <select id="report-worker">
+          <option value="all">همه کارگران</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>پروژه</label>
+        <select id="report-site">
+          <option value="all">همه پروژه‌ها</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>نوع گزارش</label>
+        <select id="report-type">
+          <option value="biweekly">دو هفتگی (Bi-Weekly)</option>
+          <option value="weekly">هفتگی</option>
+          <option value="daily">روزانه</option>
+          <option value="monthly">ماهانه</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>از تاریخ</label>
+        <input type="date" id="report-from">
+      </div>
+      <button class="btn-export" onclick="exportExcel()">⬇ دانلود Excel</button>
+      <button class="btn-export" style="background:var(--navy);color:white;" onclick="previewReport()">👁 پیش‌نمایش</button>
+    </div>
+  </div>
+
+  <div id="report-preview"></div>
+</div>
+
+<!-- ===== QR CODES ===== -->
+<div class="view" id="view-qrcodes">
+  <div class="card">
+    <div class="card-title"><span class="icon">🔲</span> QR کد هر پروژه</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:20px;">این QR کدها را پرینت بگیرید و روی toolbox هر سایت نصب کنید.</p>
+  </div>
+  <div class="qr-grid" id="qr-grid"></div>
+</div>
+
+<!-- ===== MANAGE ===== -->
+<div class="view" id="view-manage">
+  <div class="manage-grid">
+    <!-- Workers -->
+    <div class="card">
+      <div class="card-title"><span class="icon">👷</span> مدیریت کارگران</div>
+      <div class="input-row">
+        <input type="text" id="new-worker-name" placeholder="نام کارگر">
+        <input type="number" id="new-worker-rate" placeholder="نرخ ساعتی ($)" style="width:130px;flex:none;">
+        <button class="btn-add" onclick="addWorker()">+ افزودن</button>
+      </div>
+      <div id="workers-list"></div>
+    </div>
+
+    <!-- Projects -->
+    <div class="card">
+      <div class="card-title"><span class="icon">🏗</span> مدیریت پروژه‌ها</div>
+      <div class="input-row">
+        <input type="text" id="new-site-name" placeholder="نام پروژه">
+        <input type="text" id="new-site-address" placeholder="آدرس / موقعیت">
+        <button class="btn-add" onclick="addSite()">+ افزودن</button>
+      </div>
+      <div id="sites-list"></div>
+    </div>
+  </div>
+
+  <!-- All Logs -->
+  <div class="card">
+    <div class="card-title"><span class="icon">📝</span> تمام ثبت‌ها</div>
+    <table>
+      <thead>
+        <tr>
+          <th>کارگر</th>
+          <th>پروژه</th>
+          <th>ورود</th>
+          <th>خروج</th>
+          <th>ساعت</th>
+          <th>GPS</th>
+          <th>حذف</th>
+        </tr>
+      </thead>
+      <tbody id="all-logs-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== STATE =====
+let state = {
+  workers: [
+    { id: 1, name: 'Iman Abbaspour', rate: 38 },
+    { id: 2, name: 'Ali Rezaei', rate: 35 },
+    { id: 3, name: 'Reza Karimi', rate: 35 },
+    { id: 4, name: 'Mohsen Ahmadi', rate: 33 },
+  ],
+  sites: [
+    { id: 1, name: 'BCITSA Childcare Centre', address: 'Burnaby, BC', lat: 49.2488, lng: -122.9805 },
+    { id: 2, name: 'St. Anthony School', address: 'Vancouver, BC', lat: 49.2566, lng: -123.1380 },
+  ],
+  logs: [],
+  notifications: [],
+  gpsCoords: null,
+  currentWorker: null,
+  currentSite: null,
+};
+
+// Sample logs
+const now = new Date();
+function daysAgo(d) { const dt = new Date(now); dt.setDate(dt.getDate()-d); return dt; }
+function makeLog(wId, sId, inHour, outHour, daysBack, gps=true) {
+  const d = daysAgo(daysBack);
+  const inT = new Date(d); inT.setHours(inHour,Math.floor(Math.random()*30),0,0);
+  const outT = outHour ? new Date(d) : null;
+  if(outT) outT.setHours(outHour, Math.floor(Math.random()*30),0,0);
+  return { id: Date.now()+Math.random(), workerId:wId, siteId:sId, clockIn:inT, clockOut:outT, gpsVerified:gps };
+}
+state.logs = [
+  makeLog(1,1,7,15,0), makeLog(2,1,7,16,0), makeLog(3,2,8,17,0),
+  makeLog(1,1,7,15,1), makeLog(2,2,8,16,1), makeLog(4,1,7,null,0,false),
+  makeLog(1,2,7,15,2), makeLog(3,1,8,16,2), makeLog(2,1,7,15,3),
+  makeLog(4,2,8,17,3), makeLog(1,1,7,15,4), makeLog(2,2,8,16,4),
+];
+// Mark some as active (clocked in today, no clock out)
+state.logs.filter(l=>!l.clockOut && daysAgo(0).toDateString()===l.clockIn.toDateString()).forEach(l=>l.clockOut=null);
+
+state.notifications = [
+  { type:'in', name:'Iman Abbaspour', site:'BCITSA Childcare', time: new Date(now.getTime()-15*60000) },
+  { type:'in', name:'Ali Rezaei', site:'BCITSA Childcare', time: new Date(now.getTime()-20*60000) },
+  { type:'flag', name:'Mohsen Ahmadi', site:'BCITSA Childcare', time: new Date(now.getTime()-22*60000) },
+  { type:'in', name:'Reza Karimi', site:'St. Anthony School', time: new Date(now.getTime()-45*60000) },
+  { type:'out', name:'Ali Rezaei', site:'BCITSA Childcare', time: new Date(now.getTime()-2*3600000) },
+];
+
+// ===== HELPERS =====
+function getWorker(id) { return state.workers.find(w=>w.id===id); }
+function getSite(id) { return state.sites.find(s=>s.id===id); }
+function formatTime(dt) { if(!dt) return '--'; return dt.toLocaleTimeString('en-CA',{hour:'2-digit',minute:'2-digit',hour12:false}); }
+function formatDate(dt) { return dt.toLocaleDateString('en-CA',{month:'short',day:'numeric'}); }
+function calcHours(inT, outT) {
+  if(!outT) return null;
+  const h = (outT-inT)/3600000;
+  return Math.max(0, h - 0.5); // 30min lunch deducted
+}
+function timeAgo(dt) {
+  const mins = Math.floor((now-dt)/60000);
+  if(mins<1) return 'همین الان';
+  if(mins<60) return `${mins} دقیقه پیش`;
+  return `${Math.floor(mins/60)} ساعت پیش`;
+}
+
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast ${type} show`;
+  setTimeout(()=>t.className='toast',3000);
+}
+
+// ===== VIEWS =====
+function showView(name) {
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.className='nav-btn inactive');
+  document.getElementById('view-'+name).classList.add('active');
+  event.target.className = 'nav-btn active';
+  if(name==='dashboard') renderDashboard();
+  if(name==='worker') initWorkerView();
+  if(name==='reports') initReports();
+  if(name==='qrcodes') renderQRCodes();
+  if(name==='manage') renderManage();
+}
+
+// ===== DASHBOARD =====
+function renderDashboard() {
+  const today = new Date().toDateString();
+  const todayLogs = state.logs.filter(l=>l.clockIn.toDateString()===today);
+  const active = state.logs.filter(l=>l.clockIn.toDateString()===today && !l.clockOut);
+  const flags = state.logs.filter(l=>l.clockIn.toDateString()===today && !l.gpsVerified);
+  const totalHrs = todayLogs.filter(l=>l.clockOut).reduce((s,l)=>s+calcHours(l.clockIn,l.clockOut),0);
+
+  document.getElementById('stat-active').textContent = active.length;
+  document.getElementById('stat-today').textContent = todayLogs.length;
+  document.getElementById('stat-hours').textContent = totalHrs.toFixed(1)+'h';
+  document.getElementById('stat-flag').textContent = flags.length;
+
+  // Live table
+  const tbody = document.getElementById('live-table-body');
+  tbody.innerHTML = '';
+  todayLogs.sort((a,b)=>b.clockIn-a.clockIn).forEach(log=>{
+    const w = getWorker(log.workerId);
+    const s = getSite(log.siteId);
+    const hrs = log.clockOut ? calcHours(log.clockIn,log.clockOut).toFixed(1)+'h' : elapsed(log.clockIn);
+    const status = log.clockOut
+      ? `<span class="status-out">⬤ خارج</span>`
+      : !log.gpsVerified
+        ? `<span class="status-flag">⚑ GPS نامشخص</span>`
+        : `<span class="status-in">⬤ در سایت</span>`;
+    tbody.innerHTML += `<tr>
+      <td><strong>${w?.name||'نامشخص'}</strong></td>
+      <td>${s?.name||'نامشخص'}</td>
+      <td>${formatTime(log.clockIn)}</td>
+      <td>${hrs}</td>
+      <td>${status}</td>
+    </tr>`;
+  });
+  if(!todayLogs.length) tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px;">هنوز کسی وارد نشده</td></tr>';
+
+  // Notifications
+  const nl = document.getElementById('notif-list');
+  nl.innerHTML = '';
+  state.notifications.slice(0,8).forEach(n=>{
+    const icon = n.type==='in'?'✅':n.type==='out'?'🚪':'⚑';
+    const action = n.type==='in'?'وارد سایت شد':n.type==='out'?'از سایت خارج شد':'ورود بدون GPS';
+    nl.innerHTML += `<div class="notif-item ${n.type}">
+      <div class="notif-icon">${icon}</div>
+      <div class="notif-text">
+        <div class="notif-name">${n.name}</div>
+        <div class="notif-time">${action} · ${n.site} · ${timeAgo(n.time)}</div>
+      </div>
+    </div>`;
+  });
+}
+
+function elapsed(start) {
+  const ms = now - start;
+  const h = Math.floor(ms/3600000);
+  const m = Math.floor((ms%3600000)/60000);
+  return `${h}h ${m}m`;
+}
+
+// ===== WORKER VIEW =====
+function initWorkerView() {
+  const ws = document.getElementById('worker-select');
+  const ss = document.getElementById('site-select');
+  ws.innerHTML = '<option value="">انتخاب کنید...</option>';
+  ss.innerHTML = '<option value="">انتخاب کنید...</option>';
+  state.workers.forEach(w=>ws.innerHTML+=`<option value="${w.id}">${w.name}</option>`);
+  state.sites.forEach(s=>ss.innerHTML+=`<option value="${s.id}">${s.name}</option>`);
+  startClock();
+  requestGPS();
+}
+
+function startClock() {
+  function tick() {
+    const n = new Date();
+    document.getElementById('live-clock').textContent =
+      n.toLocaleTimeString('en-CA',{hour12:false});
+    document.getElementById('live-date').textContent =
+      n.toLocaleDateString('en-CA',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  }
+  tick();
+  setInterval(tick, 1000);
+}
+
+function requestGPS() {
+  const el = document.getElementById('gps-status');
+  if(!navigator.geolocation) {
+    el.className='gps-indicator gps-warn';
+    el.textContent='⚑ GPS در دسترس نیست — ورود با Flag ثبت می‌شود';
+    state.gpsCoords = null; return;
+  }
+  navigator.geolocation.getCurrentPosition(pos=>{
+    state.gpsCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+    el.className='gps-indicator gps-ok';
+    el.textContent='✅ GPS فعال — موقعیت تأیید شد';
+  }, ()=>{
+    state.gpsCoords = null;
+    el.className='gps-indicator gps-warn';
+    el.textContent='⚑ GPS غیرفعال — ورود با Flag ثبت می‌شود';
+  });
+}
+
+function simulateScan() {
+  const sites = state.sites;
+  if(!sites.length) { showToast('ابتدا پروژه اضافه کنید','error'); return; }
+  const site = sites[Math.floor(Math.random()*sites.length)];
+  document.getElementById('site-select').value = site.id;
+  document.getElementById('scan-result').textContent = `✅ سایت شناسایی شد: ${site.name}`;
+  showToast(`QR اسکن شد: ${site.name}`,'success');
+}
+
+function clockIn() {
+  const wId = parseInt(document.getElementById('worker-select').value);
+  const sId = parseInt(document.getElementById('site-select').value);
+  if(!wId||!sId) { showToast('کارگر و سایت را انتخاب کنید','error'); return; }
+
+  const log = {
+    id: Date.now(),
+    workerId: wId,
+    siteId: sId,
+    clockIn: new Date(),
+    clockOut: null,
+    gpsVerified: !!state.gpsCoords,
+  };
+  state.logs.push(log);
+
+  const w = getWorker(wId);
+  const s = getSite(sId);
+  state.notifications.unshift({
+    type: log.gpsVerified ? 'in' : 'flag',
+    name: w.name,
+    site: s.name,
+    time: new Date(),
+  });
+
+  document.getElementById('btn-clock-in').style.display='none';
+  document.getElementById('btn-clock-out').style.display='block';
+  document.getElementById('worker-status').textContent = `⏱ ${w.name} از ساعت ${formatTime(log.clockIn)} در سایت است`;
+
+  showToast(`✅ ${w.name} وارد ${s.name} شد`, 'success');
+  if(!log.gpsVerified) showToast('⚑ ورود با Flag GPS ثبت شد','warning');
+}
+
+function clockOut() {
+  const wId = parseInt(document.getElementById('worker-select').value);
+  const sId = parseInt(document.getElementById('site-select').value);
+  const log = state.logs.filter(l=>l.workerId===wId&&l.siteId===sId&&!l.clockOut).pop();
+  if(!log) { showToast('ورودی فعال یافت نشد','error'); return; }
+
+  log.clockOut = new Date();
+  const w = getWorker(wId);
+  const s = getSite(sId);
+  const hrs = calcHours(log.clockIn, log.clockOut).toFixed(2);
+
+  state.notifications.unshift({ type:'out', name:w.name, site:s.name, time:new Date() });
+
+  document.getElementById('btn-clock-in').style.display='block';
+  document.getElementById('btn-clock-out').style.display='none';
+  document.getElementById('worker-status').textContent = `✅ ${w.name} — ${hrs} ساعت کار ثبت شد`;
+
+  showToast(`🚪 ${w.name} از ${s.name} خارج شد — ${hrs}h`, 'success');
+}
+
+// ===== REPORTS =====
+function initReports() {
+  const rw = document.getElementById('report-worker');
+  const rs = document.getElementById('report-site');
+  rw.innerHTML = '<option value="all">همه کارگران</option>';
+  rs.innerHTML = '<option value="all">همه پروژه‌ها</option>';
+  state.workers.forEach(w=>rw.innerHTML+=`<option value="${w.id}">${w.name}</option>`);
+  state.sites.forEach(s=>rs.innerHTML+=`<option value="${s.id}">${s.name}</option>`);
+  const d = new Date(); d.setDate(d.getDate()-14);
+  document.getElementById('report-from').value = d.toISOString().split('T')[0];
+}
+
+function previewReport() {
+  const wId = document.getElementById('report-worker').value;
+  const sId = document.getElementById('report-site').value;
+  const type = document.getElementById('report-type').value;
+
+  const workers = wId==='all' ? state.workers : state.workers.filter(w=>w.id===parseInt(wId));
+  const fromDate = new Date(document.getElementById('report-from').value);
+  const preview = document.getElementById('report-preview');
+  preview.innerHTML = '';
+
+  workers.forEach(w=>{
+    let logs = state.logs.filter(l=>l.workerId===w.id && l.clockIn>=fromDate && l.clockOut);
+    if(sId!=='all') logs = logs.filter(l=>l.siteId===parseInt(sId));
+    logs.sort((a,b)=>a.clockIn-b.clockIn);
+
+    // Split into weeks
+    const week1 = logs.filter(l=>{ const d=new Date(fromDate); const e=new Date(d); e.setDate(d.getDate()+7); return l.clockIn>=d&&l.clockIn<e; });
+    const week2 = logs.filter(l=>{ const d=new Date(fromDate); d.setDate(d.getDate()+7); const e=new Date(fromDate); e.setDate(e.getDate()+14); return l.clockIn>=d&&l.clockIn<e; });
+
+    const w1Total = week1.reduce((s,l)=>s+calcHours(l.clockIn,l.clockOut),0);
+    const w2Total = week2.reduce((s,l)=>s+calcHours(l.clockIn,l.clockOut),0);
+    const biTotal = w1Total + w2Total;
+
+    function rowsHTML(logs, label) {
+      if(!logs.length) return `<tr><td colspan="7" style="color:var(--muted);font-size:12px;padding:6px 10px;">— بدون ثبت —</td></tr>`;
+      return logs.map((l,i)=>{
+        const s = getSite(l.siteId);
+        const hrs = calcHours(l.clockIn,l.clockOut);
+        return `<tr>
+          <td>${i+1}</td>
+          <td>${l.clockIn.toLocaleDateString('en-CA',{weekday:'short'})}</td>
+          <td>${formatDate(l.clockIn)}</td>
+          <td>${formatTime(l.clockIn)}</td>
+          <td>${formatTime(l.clockOut)}</td>
+          <td>${s?.name||''}</td>
+          <td style="color:var(--navy);font-weight:600;">${hrs.toFixed(2)}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    preview.innerHTML += `
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div>
+          <div style="font-size:16px;font-weight:700;color:var(--navy);">SALAM FACADE LTD.</div>
+          <div style="font-size:13px;color:var(--muted);">Employee Timesheet · ${type==='biweekly'?'Bi-Weekly Pay Period':type==='weekly'?'Weekly':'Monthly'}</div>
+        </div>
+        <div style="font-size:13px;color:var(--muted);">${formatDate(fromDate)} — ${formatDate(new Date(fromDate.getTime()+14*86400000))}</div>
+      </div>
+      <div style="background:var(--bg);padding:8px 14px;border-radius:8px;margin-bottom:12px;font-size:14px;">
+        <strong>Employee:</strong> ${w.name} &nbsp;|&nbsp; <strong>Rate:</strong> $${w.rate}/hr
+      </div>
+      <table class="ts-table">
+        <thead><tr><th>#</th><th>Day</th><th>Date</th><th>Start</th><th>End</th><th>Job Site</th><th>Daily Hrs</th></tr></thead>
+        <tbody>
+          <tr class="ts-week-header"><td colspan="7">▸ WEEK 1</td></tr>
+          ${rowsHTML(week1,'Week 1')}
+          <tr class="ts-total"><td colspan="6">WEEK 1 TOTAL (hrs)</td><td>${w1Total.toFixed(2)}</td></tr>
+          <tr class="ts-week-header"><td colspan="7">▸ WEEK 2</td></tr>
+          ${rowsHTML(week2,'Week 2')}
+          <tr class="ts-total"><td colspan="6">WEEK 2 TOTAL (hrs)</td><td>${w2Total.toFixed(2)}</td></tr>
+          <tr class="ts-biweekly"><td colspan="6">BI-WEEKLY TOTAL HOURS</td><td>${biTotal.toFixed(2)}</td></tr>
+          <tr><td colspan="4" style="padding:12px;font-size:12px;color:var(--muted);">Employee Signature: ________________</td>
+              <td colspan="3" style="padding:12px;font-size:12px;color:var(--muted);">Supervisor Approval: ________________</td></tr>
+        </tbody>
+      </table>
+      <div style="margin-top:14px;background:#fef9ec;border-radius:8px;padding:10px 14px;font-size:13px;display:flex;gap:24px;">
+        <span>⏱ <strong>Total Hours:</strong> ${biTotal.toFixed(2)}h</span>
+        <span>💰 <strong>Gross Pay:</strong> $${(biTotal * w.rate).toFixed(2)}</span>
+        <span>📍 <strong>Rate:</strong> $${w.rate}/hr</span>
+      </div>
+    </div>`;
+  });
+}
+
+function exportExcel() {
+  previewReport();
+  showToast('✅ خروجی Excel آماده شد (در نسخه کامل دانلود می‌شود)','success');
+}
+
+// ===== QR CODES =====
+function renderQRCodes() {
+  const grid = document.getElementById('qr-grid');
+  grid.innerHTML = '';
+  state.sites.forEach(site=>{
+    grid.innerHTML += `
+    <div class="qr-card">
+      <div class="qr-project-name">🏗 ${site.name}</div>
+      <div class="qr-address">📍 ${site.address}</div>
+      <div class="qr-box">
+        ${generateQRSVG(site.id)}
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:12px;">ID: SF-SITE-${site.id.toString().padStart(4,'0')}</div>
+      <button class="btn-print" onclick="printQR('${site.name}')">🖨 پرینت QR</button>
+    </div>`;
+  });
+  if(!state.sites.length) grid.innerHTML='<div style="color:var(--muted);padding:24px;">ابتدا پروژه اضافه کنید</div>';
+}
+
+function generateQRSVG(id) {
+  // Visual QR-like pattern (decorative)
+  const seed = id * 7919;
+  const cells = [];
+  const size = 9;
+  for(let i=0;i<size*size;i++){
+    const r=(i*seed+i*i)%97;
+    const corner=(i<3*size&&i%size<3)||(i<3*size&&i%size>=size-3)||(i>=size*(size-3)&&i%size<3);
+    cells.push(corner||r>50);
+  }
+  let svg=`<svg width="120" height="120" viewBox="0 0 ${size*12} ${size*12}" xmlns="http://www.w3.org/2000/svg">`;
+  svg+=`<rect width="100%" height="100%" fill="#1a2744"/>`;
+  cells.forEach((on,i)=>{
+    if(on){
+      const x=(i%size)*12+1, y=Math.floor(i/size)*12+1;
+      svg+=`<rect x="${x}" y="${y}" width="10" height="10" fill="#c9a84c" rx="1"/>`;
+    }
+  });
+  svg+=`</svg>`;
+  return svg;
+}
+
+function printQR(name) {
+  showToast(`🖨 پرینت QR کد: ${name}`,'success');
+}
+
+// ===== MANAGE =====
+function renderManage() {
+  renderWorkersList();
+  renderSitesList();
+  renderAllLogs();
+}
+
+function renderWorkersList() {
+  const el = document.getElementById('workers-list');
+  el.innerHTML = '';
+  state.workers.forEach(w=>{
+    el.innerHTML+=`<div class="list-item">
+      <div class="list-item-info">
+        <div class="list-item-name">👤 ${w.name}</div>
+        <div class="list-item-sub">$${w.rate}/hr</div>
+      </div>
+      <button class="btn-del" onclick="delWorker(${w.id})">✕</button>
+    </div>`;
+  });
+}
+
+function renderSitesList() {
+  const el = document.getElementById('sites-list');
+  el.innerHTML = '';
+  state.sites.forEach(s=>{
+    el.innerHTML+=`<div class="list-item">
+      <div class="list-item-info">
+        <div class="list-item-name">🏗 ${s.name}</div>
+        <div class="list-item-sub">📍 ${s.address}</div>
+      </div>
+      <button class="btn-del" onclick="delSite(${s.id})">✕</button>
+    </div>`;
+  });
+}
+
+function renderAllLogs() {
+  const tbody = document.getElementById('all-logs-body');
+  tbody.innerHTML = '';
+  [...state.logs].sort((a,b)=>b.clockIn-a.clockIn).slice(0,30).forEach(log=>{
+    const w=getWorker(log.workerId), s=getSite(log.siteId);
+    const hrs=log.clockOut?calcHours(log.clockIn,log.clockOut).toFixed(2):'—';
+    const gps=log.gpsVerified?'<span style="color:var(--green)">✅</span>':'<span style="color:var(--orange)">⚑</span>';
+    tbody.innerHTML+=`<tr>
+      <td>${w?.name||'?'}</td>
+      <td>${s?.name||'?'}</td>
+      <td>${formatDate(log.clockIn)} ${formatTime(log.clockIn)}</td>
+      <td>${log.clockOut?formatDate(log.clockOut)+' '+formatTime(log.clockOut):'— در سایت'}</td>
+      <td>${hrs}</td>
+      <td>${gps}</td>
+      <td><button class="btn-del" onclick="delLog('${log.id}')">✕</button></td>
+    </tr>`;
+  });
+}
+
+function addWorker() {
+  const name = document.getElementById('new-worker-name').value.trim();
+  const rate = parseFloat(document.getElementById('new-worker-rate').value)||35;
+  if(!name) { showToast('نام کارگر را وارد کنید','error'); return; }
+  state.workers.push({ id: Date.now(), name, rate });
+  document.getElementById('new-worker-name').value='';
+  document.getElementById('new-worker-rate').value='';
+  renderManage();
+  showToast(`✅ ${name} اضافه شد`,'success');
+}
+
+function addSite() {
+  const name = document.getElementById('new-site-name').value.trim();
+  const address = document.getElementById('new-site-address').value.trim()||'Vancouver, BC';
+  if(!name) { showToast('نام پروژه را وارد کنید','error'); return; }
+  state.sites.push({ id: Date.now(), name, address, lat:49.25, lng:-123.1 });
+  document.getElementById('new-site-name').value='';
+  document.getElementById('new-site-address').value='';
+  renderManage();
+  renderQRCodes();
+  showToast(`✅ پروژه ${name} اضافه شد`,'success');
+}
+
+function delWorker(id) {
+  state.workers = state.workers.filter(w=>w.id!==id);
+  renderManage();
+}
+function delSite(id) {
+  state.sites = state.sites.filter(s=>s.id!==id);
+  renderManage();
+}
+function delLog(id) {
+  state.logs = state.logs.filter(l=>String(l.id)!==String(id));
+  renderAllLogs();
+}
+
+// ===== INIT =====
+renderDashboard();
+</script>
+</body>
+</html>
